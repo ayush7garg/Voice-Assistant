@@ -24,20 +24,24 @@ import wikipedia
 import random
 from time import strftime
 import win32com.client as wincl
+import pywhatkit as kit
 
+#kit.add_driver_path("C:/Users/user/Downloads/chromedriver_win32/chromedriver.exe")
 
-def shiruResponse(audio):
-    "speaks audio passed as argument"
+def shiroResponse(audio):
+    #speaks audio passed as argument
     print(audio)
     for line in audio.splitlines():
         speak = wincl.Dispatch("SAPI.SpVoice")
         speak.Speak(audio)
 
+
 def myCommand():
-    "listens for commands"
+    #speech to text conversion
+    #listens for commands
     r = sr.Recognizer()
     with sr.Microphone() as source:
-        print('Say something...')
+        print('listening...')
         r.pause_threshold = 1
         r.adjust_for_ambient_noise(source, duration=1)
         audio = r.listen(source)
@@ -50,192 +54,194 @@ def myCommand():
         command = myCommand();
     return command
 
+
+def reddit(command):
+    #open subreddit reddit
+    reg_ex = re.search('open reddit (.*)', command)
+    url = 'https://www.reddit.com/'
+    if reg_ex:
+        subreddit = reg_ex.group(1)
+        url = url + 'r/' + subreddit
+    webbrowser.open(url)
+    shiroResponse('The Reddit content has been opened for you.')
+
+
+def openWebsite(command):
+    reg_ex = re.search('open (.+)', command)
+    if reg_ex:
+        domain = reg_ex.group(1)
+        print(domain)
+        url = 'https://www.' + domain + '.com'
+        webbrowser.open(url)
+        shiroResponse('The website you have requested has been opened for you.')
+    else:
+        pass
+
+
+def greetings():
+    day_time = int(strftime('%H'))
+    if day_time < 12:
+        shiroResponse('Hello. Good morning')
+    elif 12 <= day_time < 17:
+        shiroResponse('Hello. Good afternoon')
+    else:
+        shiroResponse('Hello. Good evening')
+
+
+def helpMe():
+    Path=os.getcwd()+'/helpMe/'
+    i=1
+    try:
+        file_name="helpMe.txt"
+        fr=open(Path+file_name,"r")
+        l=fr.readlines()
+        for sent in l:
+            shiroResponse(sent)
+        fr.close
+    except IOError:
+        shiroResponse("Sorry my bad. Try again")
+
+
+def newsFeed():
+    try:
+        news_url="https://news.google.com/news/rss"
+        Client=urllib2.urlopen(news_url)
+        xml_page=Client.read()
+        Client.close()
+        soup_page=soup(xml_page,"xml")
+        news_list=soup_page.findAll("item")
+        for news in news_list[:15]:
+            shiroResponse(news.title.text.encode('utf-8'))
+    except Exception as e:
+            print(e)
+
+
+def time():
+    import datetime
+    now = datetime.datetime.now()
+    shiroResponse('Current time is %d hours %d minutes' % (now.hour, now.minute))
+
+
+def sendMail():
+    shiroResponse('Who is the recipient?')
+    recipient = myCommand()
+    if 'david' in recipient:
+        shiroResponse('What should I say to him?')
+        content = myCommand()
+        mail = smtplib.SMTP('smtp.gmail.com', 587)
+        mail.ehlo()
+        mail.starttls()
+        mail.login('987ayush@gmail.com', '*************')
+        mail.sendmail('987ayush@gmail.com', 'amdp.hauhan@gmail.com', content)
+        mail.close()
+        shiroResponse('Email has been sent successfuly. You can check your inbox.')
+    else:
+        shiroResponse('I don\'t know what you mean!')
+
+
+def playMusic():
+    shiroResponse('What song shall I play?')
+    mysong = myCommand()
+    shiroResponse('Playing your favourite '+mysong)
+    if mysong:
+        kit.playonyt(mysong)
+
+
+def AMA(command):
+    reg_ex = re.search('tell me about (.*)', command)
+    try:
+        if reg_ex:
+            topic = reg_ex.group(1)
+            ny = wikipedia.summary(topic,sentences =3)
+            shiroResponse(ny)
+    except Exception as e:
+            print(e)
+            shiroResponse(e)
+
+
+def playRhyme():
+    shiroResponse('What rhyme shall I recite?')
+    myRhyme = myCommand()
+    shiroResponse('Playing your favourite '+myRhyme)
+    if myRhyme:
+        kit.playonyt(myRhyme)
+
+
+def reciteCounting():
+    Path=os.getcwd()+'/Countings/'
+    i=1
+    try:
+        file_name="1.txt"
+        fr=open(Path+file_name,"r")
+        l=fr.readlines()
+        for sent in l:
+            shiroResponse(sent)
+        fr.close
+    except IOError:
+        shiroResponse("Sorry my bad. Try again")
+
+
 def assistant(command):
-    "if statements for executing commands"
+    #if statements for executing commands
 
     #open subreddit Reddit
     if 'open reddit' in command:
-        reg_ex = re.search('open reddit (.*)', command)
-        url = 'https://www.reddit.com/'
-        if reg_ex:
-            subreddit = reg_ex.group(1)
-            url = url + 'r/' + subreddit
-        webbrowser.open(url)
-        shiruResponse('The Reddit content has been opened for you Sir.')
-
-    elif 'shutdown' in command:
-        shiruResponse('Bye bye Sir. Have a nice day')
-        sys.exit()
+        reddit(command)
 
     #open website
     elif 'open' in command:
-        reg_ex = re.search('open (.+)', command)
-        if reg_ex:
-            domain = reg_ex.group(1)
-            print(domain)
-            url = 'https://www.' + domain
-            webbrowser.open(url)
-            shiruResponse('The website you have requested has been opened for you Sir.')
-        else:
-            pass
+        openWebsite(command)
 
     #greetings
     elif 'hello' in command:
-        day_time = int(strftime('%H'))
-        if day_time < 12:
-            shiruResponse('Hello Sir. Good morning')
-        elif 12 <= day_time < 17:
-            shiruResponse('Hello Sir. Good afternoon')
-        else:
-            shiruResponse('Hello Sir. Good evening')
+        greetings()
 
     elif 'help me' in command:
-        shiruResponse("""
-        You can use these commands and I'll help you out:
-        1. Open reddit subreddit : Opens the subreddit in default browser.
-        2. Open xyz.com : replace xyz with any website name
-        3. Send email/email : Follow up questions such as recipient name, content will be asked in order.
-        4. Tell a joke/another joke : Says a random dad joke.
-        5. Current weather in {cityname} : Tells you the current condition and temperature
-        7. Greetings
-        8. change wallpaper : Change desktop wallpaper
-        9. news for today : reads top news of today
-        10. time : Current system time
-        11. top stories from google news (RSS feeds)
-        12. tell me about xyz : tells you about xyz
-        """)
-
+        helpMe()
 
     #top stories from google news
     elif 'news for today' in command:
-        try:
-            news_url="https://news.google.com/news/rss"
-            Client=urllib2.urlopen(news_url)
-            xml_page=Client.read()
-            Client.close()
-            soup_page=soup(xml_page,"xml")
-            news_list=soup_page.findAll("item")
-            for news in news_list[:15]:
-                shiruResponse(news.title.text.encode('utf-8'))
-        except Exception as e:
-                print(e)
-
-    #current weather
-    elif 'current weather' in command:
-        reg_ex = re.search('current weather in (.*)', command)
-        if reg_ex:
-            city = reg_ex.group(1)
-            owm = OWM(API_key='*****************')
-            obs = owm.weather_at_place(city)
-            w = obs.get_weather()
-            k = w.get_status()
-            x = w.get_temperature(unit='celsius')
-            shiruResponse('Current weather in %s is %s. The maximum temperature is %0.2f and the minimum temperature is %0.2f degree celcius' % (city, k, x['temp_max'], x['temp_min']))
+        newsFeed()
 
     #time
     elif 'time' in command:
-        import datetime
-        now = datetime.datetime.now()
-        shiruResponse('Current time is %d hours %d minutes' % (now.hour, now.minute))
+        time()
 
     #send email
     elif 'email' in command:
-        shiruResponse('Who is the recipient?')
-        recipient = myCommand()
-        if 'david' in recipient:
-            shiruResponse('What should I say to him?')
-            content = myCommand()
-            mail = smtplib.SMTP('smtp.gmail.com', 587)
-            mail.ehlo()
-            mail.starttls()
-            mail.login('987ayush@gmail.com', '*************')
-            mail.sendmail('987ayush@gmail.com', 'amdp.hauhan@gmail.com', content)
-            mail.close()
-            shiruResponse('Email has been sent successfuly. You can check your inbox.')
-        else:
-            shiruResponse('I don\'t know what you mean!')
+        sendMail()
 
-    #launch any application
-    elif 'launch' in command:
-        reg_ex = re.search('launch (.*)', command)
-        if reg_ex:
-            appname = reg_ex.group(1)
-            appname1 = appname+".app"
-            subprocess.Popen(["open", "-n", "/Applications/" + appname1], stdout=subprocess.PIPE)
+    #launch yolo application
+    elif 'detect object' in command:
+        #appname1 = "yolo.py"
+        shiroResponse('Launching object detection')
+        os.startfile('I:\capstone\Voice assistant\yolo.py') 
 
-        shiruResponse('I have launched the desired application')
+        #shiroResponse('Launching object detection')
 
     #play youtube song
-    elif 'play me a song' in command:
-        path = '/Users/nageshsinghchauhan/Documents/videos/'
-        folder = path
-        for the_file in os.listdir(folder):
-            file_path = os.path.join(folder, the_file)
-            try:
-                if os.path.isfile(file_path):
-                    os.unlink(file_path)
-            except Exception as e:
-                print(e)
-
-        shiruResponse('What song shall I play Sir?')
-        mysong = myCommand()
-        if mysong:
-            flag = 0
-            url = "https://www.youtube.com/results?search_query=" + mysong.replace(' ', '+')
-            response = urllib2.urlopen(url)
-            html = response.read()
-            soup1 = soup(html,"lxml")
-            url_list = []
-            for vid in soup1.findAll(attrs={'class':'yt-uix-tile-link'}):
-                if ('https://www.youtube.com' + vid['href']).startswith("https://www.youtube.com/watch?v="):
-                    flag = 1
-                    final_url = 'https://www.youtube.com' + vid['href']
-                    url_list.append(final_url)
-
-            url = url_list[0]
-            ydl_opts = {}
-
-            os.chdir(path)
-            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
-
-            if flag == 0:
-                shiruResponse('I have not found anything in Youtube ')
-
-    #change wallpaper
-    elif 'change wallpaper' in command:
-        folder = '/Users/nageshsinghchauhan/Documents/wallpaper/'
-        for the_file in os.listdir(folder):
-            file_path = os.path.join(folder, the_file)
-            try:
-                if os.path.isfile(file_path):
-                    os.unlink(file_path)
-            except Exception as e:
-                print(e)
-        api_key = '***************'
-        url = 'https://api.unsplash.com/photos/random?client_id=' + api_key #pic from unspalsh.com
-        f = urllib2.urlopen(url)
-        json_string = f.read()
-        f.close()
-        parsed_json = json.loads(json_string)
-        photo = parsed_json['urls']['full']
-        #urllib.urlretrieve(photo, "/Users/nageshsinghchauhan/Documents/wallpaper/a") # Location where we download the image to.
-        subprocess.call(["killall Dock"], shell=True)
-        shiruResponse('wallpaper changed successfully')
+    elif 'song' in command:
+        playMusic()
 
     #ask me anything
     elif 'tell me about' in command:
-        reg_ex = re.search('tell me about (.*)', command)
-        try:
-            if reg_ex:
-                topic = reg_ex.group(1)
-                ny = wikipedia.page(topic)
-                shiruResponse(ny.content[:500].encode('utf-8'))
-        except Exception as e:
-                print(e)
-                shiruResponse(e)
+        AMA(command)
 
-shiruResponse('Hi User, I am Shiru and I am your friend and teacher, Please give a command or say "help me" and I will tell you what all I can do for you.')
+    elif 'rhyme' in command or 'poem' in command or 'rhymes' in command or 'poems' in command:
+        playRhyme()
+
+    elif 'counting' in command or 'countings' in command:
+        reciteCounting()
+
+    elif 'shutdown' or 'bye' in command:
+        shiroResponse('Bye bye. Have a nice day')
+        sys.exit()
+
+    else:
+        shiroResponse("Sorry. My bad. Didn't get that. Can you please repeat?")
+
+
+shiroResponse('Hi, I am Shiro and I am your friend and teacher, Please give a command or say "help me" and I will tell you what all I can do for you.')
 
 #loop to continue executing multiple commands
 while True:
